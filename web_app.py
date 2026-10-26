@@ -15,7 +15,6 @@ from supabase import create_client
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / 'src'))
 import config as C
-from dataset import standardize_xray
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'dev-only-change-me')
@@ -28,8 +27,8 @@ CONFIGURED = all([SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY])
 admin = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY) if CONFIGURED else None
     
 predictor = None
-bands, test_metrics = load_confidence_bands()
-
+bands = None
+test_metrics = None
 
 
 def get_predictor():
