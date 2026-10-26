@@ -16,7 +16,6 @@ ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / 'src'))
 import config as C
 from dataset import standardize_xray
-from predict import Predictor, explain, load_confidence_bands
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'dev-only-change-me')
