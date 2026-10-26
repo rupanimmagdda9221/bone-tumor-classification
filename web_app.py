@@ -337,6 +337,7 @@ def analyze():
                 from dataset import standardize_xray
                 if np.asarray(standardize_xray(img)).std()<2: raise ValueError('Image appears blank. Please choose a visible X-ray.')
                 prediction = get_predictor().analyze(img)
+                from predict import explain
                 explanation=explain(prediction['probs'],prediction['cam_info'],bands,test_metrics)
 
                 # Store a temporary rendered heatmap in this response; persist uploaded original only if user chooses.
