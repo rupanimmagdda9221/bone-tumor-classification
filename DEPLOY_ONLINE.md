@@ -38,7 +38,8 @@ This project now has a Flask website, Supabase Auth, a persistent Postgres datab
 2. Choose **New → Web Service** and connect your private repository.
 3. Render should detect `render.yaml`. If asked, use:
    - Runtime: Python
-   - Build command: `pip install -r requirements.txt`
+   - Build command: `pip install torch==2.14.1 torchvision==0.29.1 --index-url https://download.pytorch.org/whl/cpu && pip install -r requirements.txt`
+     (installs the CPU-only PyTorch build first; the default Linux build includes CUDA and runs out of memory on the 512 MB Starter instance)
    - Start command: `gunicorn --workers 1 --threads 4 --timeout 180 --bind 0.0.0.0:$PORT web_app:app`
 4. Add these environment variables under the service's **Environment** settings:
    - `SUPABASE_URL`

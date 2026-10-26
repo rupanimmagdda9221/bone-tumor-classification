@@ -4,7 +4,6 @@ from pathlib import Path
 
 import numpy as np
 from PIL import Image, ImageOps
-from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
 
@@ -86,6 +85,7 @@ def make_splits(data_dir: Path = DATA_DIR, split_file: Path = SPLIT_FILE, refres
         saved = json.loads(split_file.read_text())
         return {k: [(_to_abs(p), y) for p, y in v] for k, v in saved.items()}
     paths, labels = scan_dataset(data_dir)
+    from sklearn.model_selection import train_test_split  # imported here: inference does not need sklearn
     x_tmp, x_test, y_tmp, y_test = train_test_split(
         paths, labels, test_size=TEST_FRAC, stratify=labels, random_state=SEED)
     x_train, x_val, y_train, y_val = train_test_split(

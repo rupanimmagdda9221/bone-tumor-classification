@@ -40,9 +40,11 @@ def load_checkpoint(path, device) -> nn.Module:
     if not os.path.isfile(path):
         raise FileNotFoundError(f"Trained model not found: {path}. Copy outputs/best_model.pt into the "
                                 "project or train one with src/train.py.")
-    state = torch.load(path, map_location=device)
+    # mmap + meta-device model: weights are read straight from the file instead of being held twice in RAM
+    state = torch.load(path, map_location="cpu", mmap=True)
     if state.get("classes") != CLASSES:
         raise ValueError(f"{path} was trained for classes {state.get('classes')}, expected {CLASSES}.")
-    model = build_model(pretrained=False)
-    model.load_state_dict(state["model"])   # strict: fails if the file is not this ResNet50 architecture
+    with torch.device("meta"):
+        model = build_model(pretrained=False)
+    model.load_state_dict(state["model"], assign=True)   # strict: fails if the file is not this ResNet50 architecture
     return model.to(device).eval()

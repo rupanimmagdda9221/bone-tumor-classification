@@ -23,9 +23,21 @@ class GradCAM:
         layer.register_forward_hook(lambda m, i, o: setattr(self, "activations", o))
         layer.register_full_backward_hook(lambda m, gi, go: setattr(self, "gradients", go[0]))
 
-    def __call__(self, x, class_idx):
+    def forward(self, x):
+        """ResNet forward pass that tracks gradients only from layer4 onwards. Grad-CAM needs nothing
+        earlier, so this keeps far fewer activations in memory than backpropagating through the whole network."""
+        m = self.model
+        with torch.no_grad():
+            x = m.layer3(m.layer2(m.layer1(m.maxpool(m.relu(m.bn1(m.conv1(x)))))))
+        x = x.requires_grad_()
+        return m.fc(torch.flatten(m.avgpool(m.layer4(x)), 1))
+
+    def __call__(self, x, class_idx=None, logits=None):
         self.model.zero_grad()
-        logits = self.model(x)
+        if logits is None:
+            logits = self.forward(x)
+        if class_idx is None:
+            class_idx = int(logits[0].argmax())
         logits[0, class_idx].backward()
         weights = self.gradients.mean(dim=(2, 3), keepdim=True)
         cam = F.relu((weights * self.activations).sum(1, keepdim=True))
@@ -113,6 +125,7 @@ class Predictor:
     def __init__(self, checkpoint=C.CHECKPOINT, device=None):
         self.device = device or C.get_device()
         self.model = load_checkpoint(checkpoint, self.device)
+        self.model.requires_grad_(False)   # inference only: Grad-CAM needs activation gradients, not weight gradients
         self.cam = GradCAM(self.model, self.model.layer4[-1])
         self.tf = eval_transform()
 
@@ -120,10 +133,10 @@ class Predictor:
         # same preprocessing as the training data: standardize -> 3-channel -> eval_transform
         img = standardize_xray(img).convert("RGB")
         x = self.tf(img).unsqueeze(0).to(self.device)
-        with torch.no_grad():
-            probs = torch.softmax(self.model(x), 1)[0].cpu().numpy()
+        logits = self.cam.forward(x)
+        probs = torch.softmax(logits.detach(), 1)[0].cpu().numpy()
         pred = int(probs.argmax())
-        cam = self.cam(x.requires_grad_(), pred)
+        cam = self.cam(x, pred, logits=logits)
         gray = np.asarray(img.convert("L").resize((C.IMG_SIZE, C.IMG_SIZE)))
         return {"probs": {c: float(p) for c, p in zip(C.CLASSES, probs)}, "label": C.CLASSES[pred],
                 "heatmap": overlay(img, cam), "cam_info": describe_cam(cam, gray)}

@@ -1,7 +1,7 @@
 """Online Bone Tumor Classification research website.
 Uses Supabase Auth for passwords, Supabase Postgres for records, and a private Storage bucket for files.
 """
-import os, sys, uuid, secrets, json, re, io
+import os, sys, uuid, secrets, json, re, io, threading, ctypes, gc
 from datetime import datetime, timezone
 from pathlib import Path
 from functools import wraps
@@ -28,6 +28,8 @@ admin = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY) if CONFIGURED els
     
 predictor = None
 bands = None
+# One analysis at a time: each needs ~150 MB, and the small hosting instance cannot fit two at once.
+analysis_lock = threading.Lock()
 # Read evaluation metrics at startup (plain JSON, no torch) so the dashboard and
 # model-analysis page show them before anyone has analysed an image.
 try:
@@ -49,6 +51,8 @@ def get_predictor():
         from dataset import standardize_xray
         from predict import Predictor, explain, load_confidence_bands
 
+        import torch
+        torch.set_num_threads(int(os.environ.get('TORCH_NUM_THREADS', '1')))   # fewer threads, less scratch memory
         predictor = Predictor(C.CHECKPOINT)
         bands, _ = load_confidence_bands()
 
@@ -170,6 +174,12 @@ LAYOUT = '''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta nam
 
 def page(body, title='Bone Tumor Classification', **kwargs):
     return render_template_string(LAYOUT, body=render_template_string(body, **kwargs), title=title)
+
+def release_memory():
+    """Hand freed memory back to the OS after an analysis (glibc keeps it otherwise)."""
+    gc.collect()
+    try: ctypes.CDLL('libc.so.6').malloc_trim(0)
+    except (OSError, AttributeError): pass
 
 def valid_uuid(value):
     try: uuid.UUID(value); return True
@@ -401,7 +411,9 @@ def analyze():
                 if min(img.size)<64: raise ValueError('Image must be at least 64×64 pixels.')
                 from dataset import standardize_xray
                 if np.asarray(standardize_xray(img)).std()<2: raise ValueError('Image appears blank. Please choose a visible X-ray.')
-                prediction = get_predictor().analyze(img)
+                with analysis_lock:
+                    prediction = get_predictor().analyze(img)
+                    release_memory()
                 from predict import explain
                 explanation=explain(prediction['probs'],prediction['cam_info'],bands,test_metrics)
 

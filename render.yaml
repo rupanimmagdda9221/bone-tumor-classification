@@ -3,7 +3,8 @@ services:
     name: bone-tumor-classification
     runtime: python
     plan: starter
-    buildCommand: pip install -r requirements.txt
+    # CPU-only torch: the default Linux wheel is the CUDA build, which does not fit in 512 MB
+    buildCommand: pip install torch==2.14.1 torchvision==0.29.1 --index-url https://download.pytorch.org/whl/cpu && pip install -r requirements.txt
     startCommand: gunicorn --workers 1 --threads 4 --timeout 180 --bind 0.0.0.0:$PORT web_app:app
     healthCheckPath: /health
     envVars:
