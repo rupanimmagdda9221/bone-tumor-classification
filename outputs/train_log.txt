@@ -1,0 +1,63 @@
+Device: mps
+{'train': 1306, 'val': 280, 'test': 281}
+Train class counts: {'benign': 1066, 'malignant': 240} -> loss weights: [0.613 2.721]
+[head 01/5] train loss 0.6687 acc 0.6240 | val loss 0.6421 acc 0.8000 f1 0.3171
+  saved best model (val F1 0.3171)
+[head 02/5] train loss 0.5954 acc 0.6730 | val loss 0.6100 acc 0.7929 f1 0.3830
+  saved best model (val F1 0.3830)
+[head 03/5] train loss 0.5708 acc 0.7136 | val loss 0.5824 acc 0.8143 f1 0.5094
+  saved best model (val F1 0.5094)
+[head 04/5] train loss 0.5483 acc 0.7121 | val loss 0.6630 acc 0.8250 f1 0.3099
+[head 05/5] train loss 0.5608 acc 0.7374 | val loss 0.5452 acc 0.7821 f1 0.4696
+[finetune 01/20] train loss 0.5009 acc 0.7672 | val loss 0.5855 acc 0.8286 f1 0.5000
+[finetune 02/20] train loss 0.4397 acc 0.8224 | val loss 0.5113 acc 0.7893 f1 0.5280
+  saved best model (val F1 0.5280)
+[finetune 03/20] train loss 0.3819 acc 0.8292 | val loss 0.5523 acc 0.7964 f1 0.5440
+  saved best model (val F1 0.5440)
+[finetune 04/20] train loss 0.3282 acc 0.8691 | val loss 0.5307 acc 0.8071 f1 0.5909
+  saved best model (val F1 0.5909)
+[finetune 05/20] train loss 0.3173 acc 0.8668 | val loss 0.5100 acc 0.8107 f1 0.5891
+[finetune 06/20] train loss 0.2536 acc 0.9028 | val loss 0.4861 acc 0.7857 f1 0.5946
+  saved best model (val F1 0.5946)
+[finetune 07/20] train loss 0.2505 acc 0.8951 | val loss 0.5364 acc 0.8679 f1 0.6476
+  saved best model (val F1 0.6476)
+[finetune 08/20] train loss 0.1844 acc 0.9265 | val loss 0.6215 acc 0.8536 f1 0.6095
+[finetune 09/20] train loss 0.1906 acc 0.9334 | val loss 0.5235 acc 0.8429 f1 0.6452
+[finetune 10/20] train loss 0.1600 acc 0.9380 | val loss 0.5444 acc 0.8714 f1 0.6897
+  saved best model (val F1 0.6897)
+[finetune 11/20] train loss 0.1521 acc 0.9342 | val loss 0.4714 acc 0.8714 f1 0.7000
+  saved best model (val F1 0.7000)
+[finetune 12/20] train loss 0.1230 acc 0.9472 | val loss 0.5454 acc 0.8786 f1 0.6964
+[finetune 13/20] train loss 0.1425 acc 0.9502 | val loss 0.5754 acc 0.9036 f1 0.7429
+  saved best model (val F1 0.7429)
+[finetune 14/20] train loss 0.1144 acc 0.9541 | val loss 0.4948 acc 0.8714 f1 0.7049
+[finetune 15/20] train loss 0.1358 acc 0.9479 | val loss 0.4725 acc 0.8857 f1 0.7143
+[finetune 16/20] train loss 0.0921 acc 0.9609 | val loss 0.5857 acc 0.8571 f1 0.6552
+[finetune 17/20] train loss 0.0711 acc 0.9732 | val loss 0.6688 acc 0.9000 f1 0.7143
+[finetune 18/20] train loss 0.0522 acc 0.9809 | val loss 0.7320 acc 0.8964 f1 0.6947
+[finetune 19/20] train loss 0.0405 acc 0.9885 | val loss 0.6348 acc 0.8857 f1 0.6981
+  early stopping finetune: no val F1 improvement for 6 epochs
+
+Best validation F1: 0.7429. Evaluating on the test set...
+
+Test set results
+  accuracy  0.8897
+  precision 0.6923
+  recall    0.7059
+  f1        0.6990
+  roc_auc   0.9445
+
+              precision    recall  f1-score   support
+
+      benign     0.9345    0.9304    0.9325       230
+   malignant     0.6923    0.7059    0.6990        51
+
+    accuracy                         0.8897       281
+   macro avg     0.8134    0.8182    0.8157       281
+weighted avg     0.8905    0.8897    0.8901       281
+
+Confusion matrix (rows = actual, cols = predicted):
+ [[214  16]
+ [ 15  36]]
+
+Saved: /Users/mac/bone_tumor_classification/outputs/test_metrics.json, /Users/mac/bone_tumor_classification/outputs/confusion_matrix.png

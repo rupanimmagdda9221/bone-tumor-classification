@@ -1,0 +1,202 @@
+{
+ "accuracy": 0.8896797153024911,
+ "precision": 0.6923076923076923,
+ "recall": 0.7058823529411765,
+ "f1": 0.6990291262135923,
+ "roc_auc": 0.9445012787723784,
+ "confusion_matrix": [
+  [
+   214,
+   16
+  ],
+  [
+   15,
+   36
+  ]
+ ],
+ "classes": [
+  "benign",
+  "malignant"
+ ],
+ "n_test": 281,
+ "confidence_bands": [
+  {
+   "band": "low",
+   "min": 0.5,
+   "max": 0.7,
+   "n": 14,
+   "accuracy": 0.21428571428571427
+  },
+  {
+   "band": "moderate",
+   "min": 0.7,
+   "max": 0.9,
+   "n": 28,
+   "accuracy": 0.6785714285714286
+  },
+  {
+   "band": "high",
+   "min": 0.9,
+   "max": 1.0,
+   "n": 239,
+   "accuracy": 0.9539748953974896
+  }
+ ],
+ "misclassified": [
+  {
+   "image": "IMG001791.png",
+   "actual": "benign",
+   "p_malignant": 0.9226
+  },
+  {
+   "image": "IMG001690.png",
+   "actual": "malignant",
+   "p_malignant": 0.0614
+  },
+  {
+   "image": "IMG000978.png",
+   "actual": "benign",
+   "p_malignant": 0.5593
+  },
+  {
+   "image": "IMG001351.png",
+   "actual": "malignant",
+   "p_malignant": 0.0306
+  },
+  {
+   "image": "IMG000791.png",
+   "actual": "benign",
+   "p_malignant": 0.7889
+  },
+  {
+   "image": "IMG000115.png",
+   "actual": "malignant",
+   "p_malignant": 0.2772
+  },
+  {
+   "image": "IMG000023.png",
+   "actual": "malignant",
+   "p_malignant": 0.0061
+  },
+  {
+   "image": "IMG000799.png",
+   "actual": "benign",
+   "p_malignant": 0.8563
+  },
+  {
+   "image": "IMG000133.png",
+   "actual": "malignant",
+   "p_malignant": 0.0381
+  },
+  {
+   "image": "IMG001390.png",
+   "actual": "malignant",
+   "p_malignant": 0.4892
+  },
+  {
+   "image": "IMG000188.png",
+   "actual": "malignant",
+   "p_malignant": 0.3337
+  },
+  {
+   "image": "IMG000899.png",
+   "actual": "benign",
+   "p_malignant": 0.8348
+  },
+  {
+   "image": "IMG000983.png",
+   "actual": "benign",
+   "p_malignant": 0.7557
+  },
+  {
+   "image": "IMG001208.png",
+   "actual": "benign",
+   "p_malignant": 0.9835
+  },
+  {
+   "image": "IMG001625.png",
+   "actual": "malignant",
+   "p_malignant": 0.2156
+  },
+  {
+   "image": "IMG001644.png",
+   "actual": "benign",
+   "p_malignant": 0.918
+  },
+  {
+   "image": "IMG000827.png",
+   "actual": "benign",
+   "p_malignant": 0.5051
+  },
+  {
+   "image": "IMG000031.png",
+   "actual": "malignant",
+   "p_malignant": 0.3982
+  },
+  {
+   "image": "IMG001525.png",
+   "actual": "benign",
+   "p_malignant": 0.9346
+  },
+  {
+   "image": "IMG001595.png",
+   "actual": "benign",
+   "p_malignant": 0.5888
+  },
+  {
+   "image": "IMG001633.png",
+   "actual": "malignant",
+   "p_malignant": 0.1771
+  },
+  {
+   "image": "IMG001609.png",
+   "actual": "benign",
+   "p_malignant": 0.5463
+  },
+  {
+   "image": "IMG000800.png",
+   "actual": "benign",
+   "p_malignant": 0.697
+  },
+  {
+   "image": "IMG001739.png",
+   "actual": "benign",
+   "p_malignant": 0.6916
+  },
+  {
+   "image": "IMG001420.png",
+   "actual": "malignant",
+   "p_malignant": 0.4051
+  },
+  {
+   "image": "IMG001657.png",
+   "actual": "malignant",
+   "p_malignant": 0.2895
+  },
+  {
+   "image": "IMG001107.png",
+   "actual": "benign",
+   "p_malignant": 0.942
+  },
+  {
+   "image": "IMG001599.png",
+   "actual": "malignant",
+   "p_malignant": 0.018
+  },
+  {
+   "image": "IMG001413.png",
+   "actual": "malignant",
+   "p_malignant": 0.004
+  },
+  {
+   "image": "IMG001865.png",
+   "actual": "malignant",
+   "p_malignant": 0.4964
+  },
+  {
+   "image": "IMG001164.png",
+   "actual": "benign",
+   "p_malignant": 0.8842
+  }
+ ]
+}
