@@ -27,16 +27,19 @@ SUPABASE_ANON_KEY = os.environ.get('SUPABASE_ANON_KEY', '').strip()
 SUPABASE_SERVICE_ROLE_KEY = os.environ.get('SUPABASE_SERVICE_ROLE_KEY', '').strip()
 CONFIGURED = all([SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY])
 admin = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY) if CONFIGURED else None
+    
 predictor = None
 bands, test_metrics = load_confidence_bands()
-try:
-    if C.CHECKPOINT.exists():
+
+
+def get_predictor():
+    global predictor
+    if predictor is None:
+        if not C.CHECKPOINT.exists():
+            raise FileNotFoundError(f"Model checkpoint not found: {C.CHECKPOINT}")
         predictor = Predictor(C.CHECKPOINT)
         print(f'[Bone Tumor Classification] Model loaded on {predictor.device}')
-    else:
-        print(f'[Bone Tumor Classification] Model checkpoint not found: {C.CHECKPOINT}')
-except Exception as exc:
-    print('[Bone Tumor Classification] Model failed to load:', repr(exc))
+    return predictor
 
 BASE_CSS = r'''
 :root{--navy:#102a43;--teal:#087f78;--mint:#d9f7f0;--paper:#f3f6fa;--ink:#172b3e;--muted:#607286;--line:#dce5ed;--white:#fff}
@@ -305,16 +308,20 @@ def analyze():
     rec=request.user_session; uid=rec['user_id']; result=None
     if request.method=='POST':
         f=request.files.get('xray'); consent=request.form.get('save_file')=='yes'
-        if not f or not f.filename: flash('Choose an X-ray image first.')
-        elif not predictor: flash('The model checkpoint is not available on this deployment. Check outputs/best_model.pt.')
+        
+        if not f or not f.filename:
+            flash('Choose an X-ray image first.')
+        elif not C.CHECKPOINT.exists():
+            flash('The model checkpoint is not available on this deployment.')
         else:
             try:
+
                 data=f.read()
                 if len(data)>15*1024*1024: raise ValueError('File exceeds 15 MB limit.')
                 img=Image.open(io.BytesIO(data)); img.load()
                 if min(img.size)<64: raise ValueError('Image must be at least 64×64 pixels.')
                 if np.asarray(standardize_xray(img)).std()<2: raise ValueError('Image appears blank. Please choose a visible X-ray.')
-                prediction=predictor.analyze(img)
+                prediction = get_predictor().analyze(img)
                 explanation=explain(prediction['probs'],prediction['cam_info'],bands,test_metrics)
                 # Store a temporary rendered heatmap in this response; persist uploaded original only if user chooses.
                 buf=io.BytesIO(); prediction['heatmap'].save(buf,format='PNG'); heatmap_b64=__import__('base64').b64encode(buf.getvalue()).decode()
