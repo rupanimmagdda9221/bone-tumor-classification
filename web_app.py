@@ -329,13 +329,16 @@ def analyze():
         else:
             try:
 
+                
                 data=f.read()
                 if len(data)>15*1024*1024: raise ValueError('File exceeds 15 MB limit.')
                 img=Image.open(io.BytesIO(data)); img.load()
                 if min(img.size)<64: raise ValueError('Image must be at least 64×64 pixels.')
+                from dataset import standardize_xray
                 if np.asarray(standardize_xray(img)).std()<2: raise ValueError('Image appears blank. Please choose a visible X-ray.')
                 prediction = get_predictor().analyze(img)
                 explanation=explain(prediction['probs'],prediction['cam_info'],bands,test_metrics)
+
                 # Store a temporary rendered heatmap in this response; persist uploaded original only if user chooses.
                 buf=io.BytesIO(); prediction['heatmap'].save(buf,format='PNG'); heatmap_b64=__import__('base64').b64encode(buf.getvalue()).decode()
                 saved_msg='Original X-ray not saved; you can choose to save it below.'
