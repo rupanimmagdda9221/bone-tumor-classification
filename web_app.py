@@ -31,6 +31,7 @@ bands = None
 test_metrics = None
 
 
+
 def get_predictor():
     global predictor, explain, bands, test_metrics
 
@@ -40,6 +41,7 @@ def get_predictor():
                 f"Model checkpoint not found: {C.CHECKPOINT}"
             )
 
+        from dataset import standardize_xray
         from predict import Predictor, explain, load_confidence_bands
 
         predictor = Predictor(C.CHECKPOINT)
@@ -50,7 +52,7 @@ def get_predictor():
         )
 
     return predictor
-r
+
 
 BASE_CSS = r'''
 :root{--navy:#102a43;--teal:#087f78;--mint:#d9f7f0;--paper:#f3f6fa;--ink:#172b3e;--muted:#607286;--line:#dce5ed;--white:#fff}
