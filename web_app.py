@@ -28,12 +28,17 @@ admin = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY) if CONFIGURED els
     
 predictor = None
 bands = None
-test_metrics = None
+# Read evaluation metrics at startup (plain JSON, no torch) so the dashboard and
+# model-analysis page show them before anyone has analysed an image.
+try:
+    test_metrics = json.loads((C.OUTPUT_DIR / 'test_metrics.json').read_text())
+except (OSError, ValueError):
+    test_metrics = None
 
 
 
 def get_predictor():
-    global predictor, explain, bands, test_metrics
+    global predictor, explain, bands
 
     if predictor is None:
         if not C.CHECKPOINT.exists():
@@ -45,7 +50,7 @@ def get_predictor():
         from predict import Predictor, explain, load_confidence_bands
 
         predictor = Predictor(C.CHECKPOINT)
-        bands, test_metrics = load_confidence_bands()
+        bands, _ = load_confidence_bands()
 
         print(
             f'[Bone Tumor Classification] Model loaded on {predictor.device}'
@@ -166,6 +171,10 @@ LAYOUT = '''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta nam
 def page(body, title='Bone Tumor Classification', **kwargs):
     return render_template_string(LAYOUT, body=render_template_string(body, **kwargs), title=title)
 
+def valid_uuid(value):
+    try: uuid.UUID(value); return True
+    except ValueError: return False
+
 def db_ready():
     return CONFIGURED
 
@@ -237,7 +246,7 @@ def index():
 
 @app.route('/health')
 def health():
-    return {'status':'ok','supabase_configured':CONFIGURED,'model_loaded':predictor is not None}, 200
+    return {'status':'ok','supabase_configured':CONFIGURED,'model_loaded':predictor is not None,'checkpoint_present':C.CHECKPOINT.exists()}, 200
 
 @app.route('/login', methods=['GET','POST'])
 def login():
@@ -354,8 +363,8 @@ def dashboard():
         if rows: profile=rows[0]
     except Exception: pass
     metrics=test_metrics or {}
-    body='''<nav class="nav"><a href="{{ url_for('dashboard') }}">Dashboard</a><a href="{{ url_for('analyze') }}">X-ray analysis</a><a href="{{ url_for('consultation') }}">Doctor guide</a><a href="{{ url_for('history') }}">Saved history</a><a href="{{ url_for('profile') }}">Profile</a><form class="right" method="post" action="{{ url_for('logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="secondary" type="submit">Sign out</button></form></nav><section class="card"><h2>Welcome{% if profile.get('display_name') %}, {{ profile.get('display_name')|e }}{% endif %}</h2><p class="muted">Signed in as {{ profile.get('email','')|e }}. Your saved consultation records and files are private to your account in this application.</p><div class="grid3"><div class="metric"><small>Test accuracy</small><strong>{{ '%.1f'|format(metrics.get('accuracy',0)*100) }}%</strong></div><div class="metric"><small>ROC-AUC</small><strong>{{ '%.3f'|format(metrics.get('roc_auc',0)) }}</strong></div><div class="metric"><small>Model status</small><strong style="font-size:20px">{{ 'Loaded' if model_loaded else 'Unavailable' }}</strong></div></div></section><div class="grid"><section class="card"><h3>Analyse an X-ray</h3><p>Upload an image to view benign/malignant model scores and a Grad-CAM overlay.</p><a class="button" href="{{ url_for('analyze') }}">Open image analysis</a></section><section class="card"><h3>Prepare for a consultation</h3><p>Organise symptoms, previous imaging, and questions to discuss with a qualified clinician.</p><a class="button" href="{{ url_for('consultation') }}">Create doctor-visit guide</a></section><section class="card"><h3>Saved history</h3><p>Review consultation summaries and files associated with your account.</p><a class="button secondary" href="{{ url_for('history') }}">View my history</a></section><section class="card"><h3>About the model</h3><p>ResNet50 transfer learning with Grad-CAM explainability. Test metrics describe the held-out dataset only, not clinical performance for an individual.</p><a class="button secondary" href="{{ url_for('model_info') }}">Model analysis</a></section></div><div class="warning"><b>Important medical limitation:</b> this academic prototype is not a diagnostic service. A benign model output does not rule out malignancy. Seek clinical assessment for persistent or worsening symptoms.</div>'''
-    return page(body, profile=profile, metrics=metrics, model_loaded=predictor is not None)
+    body='''<nav class="nav"><a href="{{ url_for('dashboard') }}">Dashboard</a><a href="{{ url_for('analyze') }}">X-ray analysis</a><a href="{{ url_for('consultation') }}">Doctor guide</a><a href="{{ url_for('history') }}">Saved history</a><a href="{{ url_for('profile') }}">Profile</a><form class="right" method="post" action="{{ url_for('logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="secondary" type="submit">Sign out</button></form></nav><section class="card"><h2>Welcome{% if profile.get('display_name') %}, {{ profile.get('display_name')|e }}{% endif %}</h2><p class="muted">Signed in as {{ profile.get('email','')|e }}. Your saved consultation records and files are private to your account in this application.</p><div class="grid3"><div class="metric"><small>Test accuracy</small><strong>{{ '%.1f'|format(metrics.get('accuracy',0)*100) }}%</strong></div><div class="metric"><small>ROC-AUC</small><strong>{{ '%.3f'|format(metrics.get('roc_auc',0)) }}</strong></div><div class="metric"><small>Model status</small><strong style="font-size:20px">{{ 'Ready' if model_loaded else 'Unavailable' }}</strong></div></div></section><div class="grid"><section class="card"><h3>Analyse an X-ray</h3><p>Upload an image to view benign/malignant model scores and a Grad-CAM overlay.</p><a class="button" href="{{ url_for('analyze') }}">Open image analysis</a></section><section class="card"><h3>Prepare for a consultation</h3><p>Organise symptoms, previous imaging, and questions to discuss with a qualified clinician.</p><a class="button" href="{{ url_for('consultation') }}">Create doctor-visit guide</a></section><section class="card"><h3>Saved history</h3><p>Review consultation summaries and files associated with your account.</p><a class="button secondary" href="{{ url_for('history') }}">View my history</a></section><section class="card"><h3>About the model</h3><p>ResNet50 transfer learning with Grad-CAM explainability. Test metrics describe the held-out dataset only, not clinical performance for an individual.</p><a class="button secondary" href="{{ url_for('model_info') }}">Model analysis</a></section></div><div class="warning"><b>Important medical limitation:</b> this academic prototype is not a diagnostic service. A benign model output does not rule out malignancy. Seek clinical assessment for persistent or worsening symptoms.</div>'''
+    return page(body, profile=profile, metrics=metrics, model_loaded=C.CHECKPOINT.exists())
 
 @app.route('/profile', methods=['GET','POST'])
 @login_required
@@ -455,6 +464,7 @@ def history():
 @login_required
 def view_consultation(record_id):
     uid=request.user_session['user_id']
+    if not valid_uuid(record_id): abort(404)
     rows=admin.table('consultations').select('*').eq('id',record_id).eq('user_id',uid).limit(1).execute().data
     if not rows: abort(404)
     r=rows[0]; raw=r.get('summary','')
@@ -468,6 +478,7 @@ def view_consultation(record_id):
 @login_required
 def download_file(file_id):
     uid=request.user_session['user_id']
+    if not valid_uuid(file_id): abort(404)
     rows=admin.table('uploaded_files').select('*').eq('id',file_id).eq('user_id',uid).limit(1).execute().data
     if not rows: abort(404)
     f=rows[0]
