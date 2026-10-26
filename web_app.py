@@ -31,14 +31,27 @@ predictor = None
 bands, test_metrics = load_confidence_bands()
 
 
+
 def get_predictor():
-    global predictor
+    global predictor, explain, bands, test_metrics
+
     if predictor is None:
         if not C.CHECKPOINT.exists():
-            raise FileNotFoundError(f"Model checkpoint not found: {C.CHECKPOINT}")
+            raise FileNotFoundError(
+                f"Model checkpoint not found: {C.CHECKPOINT}"
+            )
+
+        from predict import Predictor, explain, load_confidence_bands
+
         predictor = Predictor(C.CHECKPOINT)
-        print(f'[Bone Tumor Classification] Model loaded on {predictor.device}')
+        bands, test_metrics = load_confidence_bands()
+
+        print(
+            f'[Bone Tumor Classification] Model loaded on {predictor.device}'
+        )
+
     return predictor
+r
 
 BASE_CSS = r'''
 :root{--navy:#102a43;--teal:#087f78;--mint:#d9f7f0;--paper:#f3f6fa;--ink:#172b3e;--muted:#607286;--line:#dce5ed;--white:#fff}
