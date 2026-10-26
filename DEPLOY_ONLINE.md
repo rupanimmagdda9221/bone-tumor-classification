@@ -54,6 +54,8 @@ This project now has a Flask website, Supabase Auth, a persistent Postgres datab
 
 1. In Supabase **Authentication → URL Configuration**, set the Site URL to your Render URL.
 2. Add the Render URL to the allowed redirect URLs if your project settings require it.
+   - For **Forgot password** to work, add `https://YOUR-RENDER-URL/reset-password` to **Redirect URLs**. Without it, Supabase sends the reset link to the Site URL instead and the new-password form never appears.
+   - Test it: click **Forgot password?** on the sign-in page, open the email, set a new password, then sign in with it. Supabase's built-in email sender only allows a few emails per hour, so add custom SMTP under **Authentication → Emails** if reset emails stop arriving.
 3. Register using your own test email. If Supabase asks for email verification, open the verification email and then sign in.
 4. If sign-up reports that confirmation is required, that is expected with email verification enabled. Do not disable verification for a real public website just to make the demo easier.
 

@@ -10,7 +10,7 @@ from flask import Flask, request, redirect, url_for, render_template_string, ses
 from werkzeug.utils import secure_filename
 from PIL import Image, UnidentifiedImageError
 import numpy as np
-from supabase import create_client
+from supabase import create_client, ClientOptions
 
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / 'src'))
@@ -255,8 +255,64 @@ def login():
             resp=redirect(url_for('dashboard')); resp.set_cookie('btc_session',sid,httponly=True,secure=(request.is_secure or bool(os.environ.get('RENDER'))),samesite='Lax',max_age=60*60*24*7,path='/'); return resp
         except Exception as exc:
             flash('Sign in failed. Check your email/password and confirm your email if requested. Details: '+str(exc)[:220])
-    body='''<div class="grid"><section class="card"><h2>Welcome back</h2><p>Sign in to access your private analysis workspace, saved consultations, profile and uploaded files.</p><div class="warning"><b>Research use only</b><br>This tool cannot diagnose cancer or rule it out.</div></section><section class="card"><h2>Sign in</h2><form method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><label class="label">Email address</label><input type="email" name="email" autocomplete="email" required><label class="label">Password</label><input type="password" name="password" autocomplete="current-password" required><button class="full" type="submit">Sign in to workspace</button></form><p class="muted">New here? <a href="{{ url_for('register') }}">Create an account</a></p></section></div>'''
+    body='''<div class="grid"><section class="card"><h2>Welcome back</h2><p>Sign in to access your private analysis workspace, saved consultations, profile and uploaded files.</p><div class="warning"><b>Research use only</b><br>This tool cannot diagnose cancer or rule it out.</div></section><section class="card"><h2>Sign in</h2><form method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><label class="label">Email address</label><input type="email" name="email" autocomplete="email" required><label class="label">Password</label><input type="password" name="password" autocomplete="current-password" required><button class="full" type="submit">Sign in to workspace</button></form><a class="button secondary full" style="display:block;text-align:center" href="{{ url_for('forgot_password') }}">Forgot password?</a><p class="muted">New here? <a href="{{ url_for('register') }}">Create an account</a></p></section></div>'''
     return page(body)
+
+@app.route('/forgot-password', methods=['GET','POST'])
+def forgot_password():
+    if not CONFIGURED: return redirect(url_for('login'))
+    if request.method=='POST':
+        email=(request.form.get('email') or '').strip().lower()
+        if not re.fullmatch(r'[^\s@]+@[^\s@]+\.[^\s@]+',email): flash('Enter a valid email address.')
+        else:
+            base=os.environ.get('RENDER_EXTERNAL_URL','').rstrip('/')
+            redirect_to=base+url_for('reset_password') if base else url_for('reset_password',_external=True)
+            try:
+                # Implicit flow: the reset link returns tokens in the URL fragment, which the reset page reads.
+                auth_client=create_client(SUPABASE_URL,SUPABASE_ANON_KEY,ClientOptions(flow_type='implicit'))
+                auth_client.auth.reset_password_for_email(email,{'redirect_to':redirect_to})
+                # Same message whether or not the account exists, so emails cannot be enumerated.
+                flash('If an account exists for that email, a password reset link has been sent. Check your inbox and spam folder.','success')
+                return redirect(url_for('login'))
+            except Exception as exc:
+                print('Password reset email failed:', repr(exc))
+                flash('Could not send the reset email right now. Please wait a few minutes and try again.')
+    body='''<section class="card" style="max-width:650px;margin:auto"><h2>Reset your password</h2><p class="muted">Enter the email address you registered with. We will email you a link to choose a new password.</p><form method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><label class="label">Email address</label><input type="email" name="email" autocomplete="email" required><button class="full" type="submit">Send reset link</button></form><p class="muted">Remembered it? <a href="{{ url_for('login') }}">Back to sign in</a></p></section>'''
+    return page(body, title='Forgot password · Bone Tumor Classification')
+
+@app.route('/reset-password', methods=['GET','POST'])
+def reset_password():
+    if not CONFIGURED: return redirect(url_for('login'))
+    if request.method=='POST':
+        token=request.form.get('access_token') or ''; password=request.form.get('password') or ''; confirm=request.form.get('confirm') or ''
+        if not token: flash('This reset link is invalid or has expired. Request a new one.'); return redirect(url_for('forgot_password'))
+        if len(password)<10: flash('Use a password with at least 10 characters.')
+        elif password != confirm: flash('Passwords do not match.')
+        else:
+            try:
+                user=create_client(SUPABASE_URL,SUPABASE_ANON_KEY).auth.get_user(token).user
+                if not user: raise ValueError('Reset token was not accepted.')
+                admin.auth.admin.update_user_by_id(user.id,{'password':password})
+                # Sign the user out everywhere after a password change.
+                admin.table('web_sessions').delete().eq('user_id',user.id).execute()
+                flash('Your password has been updated. Sign in with your new password.','success')
+                return redirect(url_for('login'))
+            except Exception as exc:
+                print('Password reset failed:', repr(exc))
+                flash('This reset link is invalid or has expired. Request a new one.'); return redirect(url_for('forgot_password'))
+    body='''<section class="card" style="max-width:650px;margin:auto"><h2>Choose a new password</h2><p class="muted" id="reset-status">Checking your reset link…</p><form method="post" id="reset-form" style="display:none"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="access_token" id="access_token"><label class="label">New password (10+ characters)</label><input type="password" name="password" minlength="10" autocomplete="new-password" required><label class="label">Confirm new password</label><input type="password" name="confirm" minlength="10" autocomplete="new-password" required><button class="full" type="submit">Update password</button></form><p class="muted"><a href="{{ url_for('forgot_password') }}">Request a new link</a> · <a href="{{ url_for('login') }}">Back to sign in</a></p></section>
+<script>
+(function(){
+  var h=new URLSearchParams(location.hash.slice(1)), status=document.getElementById('reset-status'), form=document.getElementById('reset-form'), field=document.getElementById('access_token');
+  if(h.get('access_token') && h.get('type')==='recovery'){
+    field.value=h.get('access_token'); sessionStorage.setItem('btc_reset_token',field.value);
+    history.replaceState(null,'',location.pathname);
+  } else { field.value=sessionStorage.getItem('btc_reset_token')||''; }
+  if(field.value){ status.textContent='Enter your new password below.'; form.style.display='block'; form.addEventListener('submit',function(){ sessionStorage.removeItem('btc_reset_token'); }); }
+  else { status.textContent=h.get('error_description') ? h.get('error_description')+'. Request a new reset link.' : 'This reset link is invalid or has expired. Request a new one.'; }
+})();
+</script>'''
+    return page(body, title='Reset password · Bone Tumor Classification')
 
 @app.route('/register', methods=['GET','POST'])
 def register():
